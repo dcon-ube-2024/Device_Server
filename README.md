@@ -31,3 +31,32 @@ Jetsonを通常のWi-Fiに接続するときはAPモードをオフにしなけ�
 sudo nmcli connection up MyHotspot
 sudo nmcli connection down MyHotspot
 ```
+
+## Jetson mDNS
+1. avahi-deamon のインストール
+```
+sudo apt-get install avahi-daemon
+```
+2. ホストネームの変更
+/etc/hostname  
+```
+jetson 
+```
+/etc/hosts
+```
+127.0.0.1       localhost
+127.0.1.1       jetson
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+```
+3. 再起動
+```
+reboot
+```
+
+これで `{ユーザー名}@jetson `で他デバイスからアクセス可能
