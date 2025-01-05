@@ -92,7 +92,7 @@ def index():
 def login():
     mailadress = request.form["mailadress"]
     password = request.form["password"]
-    url="http://172.0.0.1:8080/api/login"
+    url="http://172.0.0.1:8080/api/login_device"
     data = {
         "mailadress": mailadress,
         "password": password
