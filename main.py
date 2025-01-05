@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for
 import subprocess
 import time
 from enum import Enum
+import requests
+import json
 
 app = Flask(__name__)
 
@@ -37,11 +39,11 @@ def control_hotspot(action):
         return
 
     if action == "on":
-        wifi_manager.wifi_mode = WiFiManager.LanMode.APMode
+        wifi_manager.wifi_mode = wifi_manager.LanMode.APMode
         subprocess.run(["sudo", "nmcli", "con", "up", "Jetson"], check=True)
         print("Hotspot turned ON.")
     elif action == "off":
-        wifi_manager.wifi_mode = WiFiManager.LanMode.WifiMode
+        wifi_manager.wifi_mode = wifi_manager.LanMode.WifiMode
         subprocess.run(["sudo", "nmcli", "con", "down", "Jetson"], check=True)
         print("Hotspot turned OFF.")
 
@@ -51,7 +53,7 @@ def connect_to_wifi(ssid, password):
     """
     try:
         print(f"Attempting to connect to Wi-Fi: SSID={ssid}, Password={password}")
-        wifi_manager.wifi_mode = WiFiManager.LanMode.WifiMode  # Switch to Wi-Fi mode for connection
+        wifi_manager.wifi_mode = wifi_manager.LanMode.WifiMode  # Switch to Wi-Fi mode for connection
         result = subprocess.run(
             ["nmcli", "dev", "wifi", "connect", ssid, "password", password],
             capture_output=True,
@@ -62,11 +64,11 @@ def connect_to_wifi(ssid, password):
         print("nmcli command error:", result.stderr)
 
         if result.returncode == 0:
-            wifi_manager.wifi_mode = WiFiManager.LanMode.WifiMode
+            wifi_manager.wifi_mode = wifi_manager.LanMode.WifiMode
             print("Successfully connected to Wi-Fi.")
             return True
         else:
-            wifi_manager.wifi_mode = WiFiManager.LanMode.APMode
+            wifi_manager.wifi_mode = wifi_manager.LanMode.APMode
             print("Failed to connect to Wi-Fi.")
             return False
     except Exception as e:
@@ -78,9 +80,36 @@ def index():
     """
     Index page route that displays the available SSIDs.
     """
-    print("Index page accessed.")
-    ssid_list = wifi_manager.ssid_list
-    return render_template("index.html", ssids=ssid_list)
+    if(wifi_manager.wifi_mode == wifi_manager.LanMode.WifiMode):
+        print("Index page accessed. Wi-Fi mode is active.")
+        return render_template("index_w.html")
+    if(wifi_manager.wifi_mode == wifi_manager.LanMode.APMode):
+        print("Index page accessed. AP mode is active.")
+        ssid_list = wifi_manager.ssid_list
+        return render_template("index_a.html", ssids=ssid_list)
+
+@app.route("/login", methods=["POST"])
+def login():
+    mailadress = request.form["mailadress"]
+    password = request.form["password"]
+    url="http://172.0.0.1:8080/api/login"
+    data = {
+        "mailadress": mailadress,
+        "password": password
+    }
+    dataset = {
+        "json" : (None, json.dumps(data), "application/json"),
+    }
+    
+    response = requests.post(url, file=dataset)
+    if(response.status_code == 200):
+        print("Login successful!")
+        return redirect(url_for("index"))
+    else:
+        print("Login failed.")
+        return redirect(url_for("error"))
+
+    
 
 @app.route("/connect", methods=["POST"])
 def connect():
@@ -107,6 +136,7 @@ def error():
     Error page route that is shown when Wi-Fi connection fails.
     """
     return "Wi-Fi connection failed. Please try again."
+
 
 if __name__ == "__main__":
     """
