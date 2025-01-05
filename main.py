@@ -90,26 +90,26 @@ def index():
 
 @app.route("/login", methods=["POST"])
 def login():
-    mailadress = request.form["mailadress"]
+    mailadress = request.form["email"]
     password = request.form["password"]
-    url="http://172.0.0.1:8080/api/login_device"
+    url="http://192.168.1.14:3001/api/login_device"
     data = {
-        "mailadress": mailadress,
+        "email": mailadress,
         "password": password
     }
     dataset = {
         "json" : (None, json.dumps(data), "application/json"),
     }
-    
-    response = requests.post(url, file=dataset)
+    response = requests.post(url, files=dataset)
     if(response.status_code == 200):
+        path = 'data/login.json'
+        with open(path, 'w') as f:
+            json.dump(data, f)
         print("Login successful!")
         return redirect(url_for("index"))
     else:
         print("Login failed.")
         return redirect(url_for("error"))
-
-    
 
 @app.route("/connect", methods=["POST"])
 def connect():
