@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi設定</title>
+</head>
+<body>
+    <h1>Wi-Fi設定</h1>
+    <form action="/connect" method="post">
+        <label for="ssid">SSID:</label>
+        <select name="ssid" id="ssid">
+            {% for ssid in ssids %}
+            <option value="{{ ssid }}">{{ ssid }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="password">パスワード:</label>
+        <input type="password" name="password" id="password">
+        <br>
+        <button type="submit">接続</button>
+    </form>
+</body>
+</html>
