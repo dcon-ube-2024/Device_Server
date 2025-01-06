@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import subprocess
 import time
 from enum import Enum
@@ -102,9 +102,11 @@ def login():
     }
     response = requests.post(url, files=dataset)
     if(response.status_code == 200):
+        response_data = response.json()
+        user_id = response_data.get("user_id")
         path = 'data/login.json'
         with open(path, 'w') as f:
-            json.dump(data, f)
+            json.dump({"email": mailadress, "password": password, "user_id": user_id}, f)
         print("Login successful!")
         return redirect(url_for("index"))
     else:
@@ -129,6 +131,44 @@ def connect():
         print("Failed to connect to Wi-Fi. Switching back to AP mode.")
         control_hotspot("on")  # Turn hotspot back on in case of failure
         return redirect(url_for("error"))
+
+@app.route("/upload", methods=["POST"])
+def upload():
+    """
+    Handles the file upload request from the web interface.
+    """
+    path = 'data/login.json'
+    try:
+        with open(path, 'r') as f:
+            login_data = json.load(f)
+    except FileNotFoundError:
+        return jsonify({"error": "Please log in first."}), 400
+    url="http://192.168.1.14:3001/api/push"
+    now_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    data_json = {
+        "email": login_data["email"]
+        "title": "{} 転倒を検知しました".format(now_time),
+        "message": "転倒を検知しました。"
+    }
+    response = requests.post(url, json=data_json)
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to send notification"}), 500
+    
+    url="http://192.168.1.14:3001/api/upload"
+    if 'files' not in request.files:
+        return jsonify({"error": "No files part in the request"}), 400
+    files=request.files.getlist('files')
+    if not files:
+        return jsonify({"error": "No files selected"}), 400
+    for file in files:
+        files_data = {
+            "file": (file.filename, file.stream, file.content_type),
+            "json": (None, json.dumps({"user_id": login_data["user_id"]}), "application/json")
+        }
+        response = requests.post(url, files=files_data)
+        if response.status_code != 200:
+            return jsonify({"error": f"Failed to upload {file.filename}"}), 500
+    return jsonify({"success": "All files uploaded successfully"}), 200
 
 @app.route("/error")
 def error():
