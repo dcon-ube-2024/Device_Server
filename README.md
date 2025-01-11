@@ -59,4 +59,4 @@ ff02::2 ip6-allrouters
 reboot
 ```
 
-これで `{ユーザー名}@jetson `で他デバイスからアクセス可能
+これで `http://jetson.local:8080/`で他デバイスからアクセス可能
